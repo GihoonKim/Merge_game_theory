@@ -1,21 +1,21 @@
 
 %% Initialize
-car_m = [70, 0, 35, 0,0];  % X,Y,Vx,Vy,a
-car_t = [160, -10, 21.9, 0, 0];
-car_b = [75, 10, 35, 0, 0];
+car_m = [70, 0, 35, 0, 0, 0];  % X,Y,Vx,Vy,ax, ay
+car_t = [160, -10, 21.9, 0, 0, 0];
+car_b = [75, 10, 35, 0, 0, 0];
 
 m = 1430;
 
 M_long = [-4, -2, 0, 2, 4];  %accleration
 M_lat = [-1, 0, 1];    %-1 : LCL;   0:LK;   1:LCR;
 
-P_inm = zeros(5,3);    %manuever prob -> row : long,  column : lat
-P_int = zeros(5,3);    %need to be changed
-P_inb = zeros(5,3);
+P_inm = 1/30*ones(5,3);    %manuever prob -> row : long,  column : lat
+P_int = 1/30*ones(5,3);    %need to be changed
+P_inb = 1/30*ones(5,3);
 
-P_inm(3,2)=1;   %constant velocity 
-P_int(3,2)=1;   %constant velocity
-P_inb(3,1)=1;   %constant velocity LCL
+P_inm(3,2)=1/2;   %constant velocity 
+P_int(3,2)=1/2;   %constant velocity
+P_inb(3,1)=1/2;   %constant velocity LCL
 
 % P_inm = 1/5*1/3*ones(5,3);    %manuever prob -> row : long,  column : lat
 % P_int = 1/5*1/3*ones(5,3);    %need to be changed
@@ -49,14 +49,9 @@ obj_left = gmdistribution([-1,-0.5],[1 0; 0 0.5],1);
 obj_str = gmdistribution([0,0],[1 0; 0 0.5],1);
 obj_right = gmdistribution([1,0.5],[1 0; 0 0.5],1);
 
-
 %connect_matrix = 
-
 %% prediction step
-dt=2;
 
-% top lane vehicle status change
-car_t(1) = car_t(3)*dt;
 
 %% Each vehicle interation-unaware function
 dyu = 0;
@@ -93,6 +88,9 @@ for i=1:5
     end
 end
 
+P_uit = P_uit/sum(sum(P_uit));
+P_uim = P_uim/sum(sum(P_uim));
+P_uib = P_uib/sum(sum(P_uib));
 %% merging vehicle interaction-aware function
 % when merging vehicle move along m(i,j)
 
@@ -108,7 +106,7 @@ for i=1:5
             for tj=1:3
                 for mi=1:5
                     for mj=1:3
-                        sum_temp = sum_temp + 1-reward(M_long(i),M_lat(j),P_uit(ti,tj),P_uim(mi,mj))*P_uit(ti,tj)*P_uim(mi,mj);  
+                        sum_temp = sum_temp + 1-risk([i,j],[ti,tj],[mi,mj],car_b,car_m,car_t)*P_uit(ti,tj)*P_uim(mi,mj);
                         % because of last two term, other vehicle can consider ego car's action
                     end
                 end
